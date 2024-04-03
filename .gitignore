@@ -1,0 +1,7 @@
+# Files
+*.pyc
+*.egg-info
+*.json
+
+# Folders
+data/
