@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from Cereal.API.Classes import APICereal
 from Cereal.server.classes import Cereal
 
 logging.basicConfig(level=logging.DEBUG)
@@ -47,7 +48,7 @@ class CerealAPI:
             return {"message": "Welcome to my API."}
 
         @self.app.get("/cereals/{cereal_id}")  # type:ignore
-        def read_cereal(cereal_id: int) -> Cereal:
+        def read_cereal(cereal_id: int) -> APICereal:
             """Find an item from id.
 
             Args:
@@ -112,7 +113,7 @@ class CerealAPI:
             weight: Optional[float] = None,
             cups: Optional[float] = None,
             rating: Optional[float] = None,
-        ) -> list[Cereal]:
+        ) -> list[APICereal]:
             """Search by attribute.
 
             If no inputs are given all items will be returned.
@@ -150,7 +151,7 @@ class CerealAPI:
                 HTTPException: No items found.
 
             Returns:
-                list[Cereal]: List of results.
+                list[APICereal]: List of results.
             """
             logging.debug("Entering search_cereals route")
             db = self.SessionLocal()
@@ -192,14 +193,14 @@ class CerealAPI:
             return cereals  # type: ignore
 
         @self.app.post("/cereals/")  # type:ignore
-        def create_cereal(cereal: Cereal) -> Cereal:
+        def create_cereal(cereal: APICereal) -> APICereal:
             """Create new entry.
 
             Args:
                 cereal (Cereal): New entry.
 
             Returns:
-                Cereal: New entry.
+                APICereal: New entry.
             """
             db = self.SessionLocal()
             db_cereal = Cereal(**cereal.dict())
