@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from Cereal.API.Classes import APICereal
+from Cereal.API.classes import APICereal
 from Cereal.server.classes import Cereal
 
 logging.basicConfig(level=logging.DEBUG)
@@ -194,21 +194,50 @@ class CerealAPI:
 
         @self.app.post("/cereals/")  # type:ignore
         def create_cereal(cereal: APICereal) -> APICereal:
-            """Create new entry.
+            """Create or update an entry.
 
             Args:
-                cereal (Cereal): New entry.
+                cereal (Cereal): New entry or updated entry.
 
             Returns:
-                APICereal: New entry.
+                APICereal: Created or updated entry.
             """
             db = self.SessionLocal()
-            db_cereal = Cereal(**cereal.dict())
-            db.add(db_cereal)
-            db.commit()
-            db.refresh(db_cereal)
-            db.close()
-            return db_cereal
+            if cereal.id is not None:
+                existing_cereal = (
+                    db.query(Cereal).filter(Cereal.id == cereal.id).first()
+                )
+                if existing_cereal:
+                    # Update existing entry
+                    for key, value in cereal.model_dump().items():
+                        setattr(existing_cereal, key, value)
+                    db.commit()
+                    db.refresh(existing_cereal)
+                    db.close()
+                    return existing_cereal
+                else:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=(
+                            "Cereal not found with provided ID "
+                            "if you wish to create a new entry "
+                            "Make id none."
+                        ),
+                    )
+            else:
+                # Create new entry
+                if cereal.type in ["C", "H"]:
+                    db_cereal = Cereal(**cereal.model_dump())
+                    db.add(db_cereal)
+                    db.commit()
+                    db.refresh(db_cereal)
+                    db.close()
+                else:
+                    raise HTTPException(
+                        status_code=422,
+                        detail="Invalid value for 'type'. Must be 'C' or 'H'.",
+                    )
+                return db_cereal
 
     def run(self, host: str = "localhost", port: int = 8000) -> None:
         """Run the api.

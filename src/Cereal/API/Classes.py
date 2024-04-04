@@ -1,13 +1,16 @@
 """Class to handle API objects."""
 
+from typing import Optional
+
 from pydantic import BaseModel
 
 
 class APICereal(BaseModel):
     """Model representing the data structure."""
 
+    id: Optional[int]
     name: str
-    manufacturer: str
+    mfr: str
     type: str
     calories: int
     protein: int
@@ -16,7 +19,7 @@ class APICereal(BaseModel):
     fiber: float
     carbo: float
     sugars: int
-    potassium: int
+    potass: int
     vitamins: int
     shelf: int
     weight: float

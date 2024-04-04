@@ -1,6 +1,6 @@
 """SQL schema."""
 
-from typing import Literal
+from typing import Literal, Optional
 
 from sqlalchemy import Column, Enum, Float, Integer, String
 
@@ -14,7 +14,7 @@ class Cereal(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255))
-    mfr = Column(Enum("A", "G", "K", "N", "P", "Q", "R", name="manifacturer"))
+    mfr = Column(String(255))
     type = Column(Enum("C", "H", name="type"))
     calories = Column(Integer)
     protein = Column(Integer)
@@ -32,7 +32,7 @@ class Cereal(Base):
 
     def __init__(
         self,
-        id: int,
+        id: Optional[int],
         name: str,
         mfr: str,
         type: Literal["C", "H"],
