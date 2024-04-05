@@ -30,3 +30,12 @@ class APICereal(BaseModel):
         """Configurations."""
 
         from_attributes = True
+
+
+class APIUser(BaseModel):
+    """model representing user structure."""
+
+    username: str
+    email: str
+    hashed_password: str
+    rights: Literal["Admin", "User"]

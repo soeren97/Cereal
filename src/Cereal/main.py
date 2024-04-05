@@ -4,8 +4,9 @@ import pandas as pd
 
 from Cereal.API.CerealAPI import CerealAPI
 from Cereal.constants import CSV_FILE, DATABASE_URL
-from Cereal.server.classes import Cereal
+from Cereal.server.Cereal import Cereal
 from Cereal.server.connection import SQLConnection
+from Cereal.server.Users import User
 
 
 def clean_rating(rating: str) -> float:
@@ -29,6 +30,7 @@ def main() -> None:
     connection = SQLConnection()
 
     if connection.is_table_empty(Cereal):
+        User.create_admin(connection.session)
         connection.upload_dataframe(df)
 
     api = CerealAPI(DATABASE_URL)

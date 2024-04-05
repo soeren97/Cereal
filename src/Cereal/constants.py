@@ -2,6 +2,7 @@
 
 import os
 
+from passlib.context import CryptContext
 from sqlalchemy.ext.declarative import declarative_base
 
 from Cereal.utils import ConfigManager
@@ -44,6 +45,8 @@ OPERATOR_MAPPING = {
     "gt": lambda field, value: field > value,
     "lt": lambda field, value: field < value,
 }
+
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 if __name__ == "__name__":
     pass

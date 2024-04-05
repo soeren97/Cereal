@@ -4,13 +4,14 @@ import logging
 from typing import Any, Literal
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from Cereal.API.classes import APICereal
-from Cereal.constants import VALID_FIELDS
-from Cereal.server.classes import Cereal
+from Cereal.constants import pwd_context
+from Cereal.server.Cereal import Cereal
+from Cereal.server.Users import User
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -53,6 +54,8 @@ class CerealAPI:
         self.app = FastAPI()
         self.setup_routes()
 
+        self.rights = "User"
+
     def setup_routes(self) -> None:
         """Create rutes for API.
 
@@ -68,6 +71,62 @@ class CerealAPI:
                 dict[Any]: Welcome message.
             """
             return {"message": "Welcome to my API."}
+
+        @self.app.post("/register")  # type:ignore
+        def register(username: str, email: str, password: str) -> dict[str, str]:
+            """Create new user.
+
+            Args:
+                username (str): Username.
+                email (str): Email.
+                password (str): Password.
+
+            Raises:
+                HTTPException: User already exists.
+
+            Returns:
+                dict[str, str]: Success message.
+            """
+            db = self.SessionLocal()
+            # Check if user already exists
+            if any(user.email == email for user in db):
+                raise HTTPException(status_code=400, detail="Email already registered")
+
+            User.create_user(db, username, email, password)
+
+            return {"message": "User registered successfully"}
+
+        @self.app.post("/login")  # type:ignore
+        def login(email: str, password: str) -> dict[str, str]:
+            """Login as user.
+
+            Args:
+                email (str): Email.
+                password (str): Password.
+
+            Raises:
+                HTTPException: User does not exist.
+                HTTPException: Password is incorrect.
+
+            Returns:
+                dict[str, str]: Succes message.
+            """
+            db = self.SessionLocal()
+            user = db.query(User).filter(User.email == email).first()
+            if not user:
+                raise HTTPException(
+                    status_code=401,
+                    detail="User does not exist.",
+                )
+            elif not pwd_context.verify(password, user.hashed_password):
+                raise HTTPException(
+                    status_code=401,
+                    detail="Wrong password.",
+                )
+
+            db.close()
+            self.rights = user.rights
+            return {"message": "Login successful"}
 
         @self.app.get("/cereals/{cereal_id}")  # type:ignore
         def read_cereal(cereal_id: int) -> APICereal:
@@ -99,7 +158,15 @@ class CerealAPI:
             Returns:
                 dict[str, str]: Confirmation message.
             """
-            logging.debug("Entering delete_cereal route")
+            if self.rights != "Admin":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Access denied. "
+                        "You are not authorized to access this resource."
+                    ),
+                )
+
             db = self.SessionLocal()
             cereal = db.query(Cereal).filter(Cereal.id == cereal_id).first()
             if cereal is None:
@@ -109,7 +176,6 @@ class CerealAPI:
             db.delete(cereal)
             db.commit()
             db.close()
-            logging.debug("Cereal with ID %s deleted successfully", cereal_id)
             return {"message": f"Cereal with ID {cereal_id} deleted successfully"}
 
         @self.app.get("/cereals")  # type:ignore

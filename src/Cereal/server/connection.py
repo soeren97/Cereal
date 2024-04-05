@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from Cereal.constants import DATABASE_URL, PASSWORD, USERNAME, Base
-from Cereal.server.classes import Cereal
+from Cereal.server.Cereal import Cereal
 
 
 class SQLConnection:

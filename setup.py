@@ -16,6 +16,8 @@ INSTALL_REQUIRES = [
     "sqlalchemy-schemadisplay",
     "fastapi",
     "uvicorn",
+    "passlib",
+    "argon2_cffi",
 ]
 
 EXTRAS_REQUIRE = {
