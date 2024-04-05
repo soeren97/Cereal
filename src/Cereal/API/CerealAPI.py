@@ -211,6 +211,14 @@ class CerealAPI:
             Returns:
                 APICereal: Created or updated entry.
             """
+            if self.rights != "Admin":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Access denied. "
+                        "You are not authorized to access this resource."
+                    ),
+                )
             db = self.SessionLocal()
             if cereal.id is not None:
                 existing_cereal = (
