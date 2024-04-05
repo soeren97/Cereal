@@ -1,6 +1,6 @@
 """Class to handle API objects."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class APICereal(BaseModel):
     id: Optional[int]
     name: str
     mfr: str
-    type: str
+    type: Literal["C", "H"]
     calories: int
     protein: int
     fat: int

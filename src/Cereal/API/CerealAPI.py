@@ -1,7 +1,7 @@
 """API to connect to the SQL server."""
 
 import logging
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -9,9 +9,31 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from Cereal.API.classes import APICereal
+from Cereal.constants import VALID_FIELDS
 from Cereal.server.classes import Cereal
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+FILTER_MAPPING = {
+    "id": Cereal.id,
+    "name": Cereal.name,
+    "mfr": Cereal.mfr,
+    "type": Cereal.type,
+    "calories": Cereal.calories,
+    "protein": Cereal.protein,
+    "fat": Cereal.fat,
+    "sodium": Cereal.sodium,
+    "fiber": Cereal.fiber,
+    "carbo": Cereal.carbo,
+    "sugars": Cereal.sugars,
+    "potass": Cereal.potass,
+    "vitamins": Cereal.vitamins,
+    "shelf": Cereal.shelf,
+    "weight": Cereal.weight,
+    "cups": Cereal.cups,
+    "rating": Cereal.rating,
+}
 
 
 class CerealAPI:
@@ -61,11 +83,7 @@ class CerealAPI:
                 Cereal: Item.
             """
             db = self.SessionLocal()
-            cereal = db.query(Cereal).filter(Cereal.id == cereal_id).first()
-            logging.debug("Cereal found: %s", cereal, "\n")
-            db.close()
-            if cereal is None:
-                raise HTTPException(status_code=404, detail="Cereal not found")
+            cereal = Cereal.get_cereal_by_id(db, cereal_id)
             return cereal
 
         @self.app.delete("/cereals/{cereal_id}")  # type:ignore
@@ -95,102 +113,27 @@ class CerealAPI:
             return {"message": f"Cereal with ID {cereal_id} deleted successfully"}
 
         @self.app.get("/cereals")  # type:ignore
-        def search_cereals(
-            id: Optional[int] = None,
-            name: Optional[str] = None,
-            mfr: Optional[str] = None,
-            type: Optional[Literal["C", "H"]] = None,
-            calories: Optional[int] = None,
-            protein: Optional[int] = None,
-            fat: Optional[int] = None,
-            sodium: Optional[int] = None,
-            fiber: Optional[float] = None,
-            carbo: Optional[float] = None,
-            sugars: Optional[int] = None,
-            potass: Optional[int] = None,
-            vitamins: Optional[int] = None,
-            shelf: Optional[Literal[1, 2, 3]] = None,
-            weight: Optional[float] = None,
-            cups: Optional[float] = None,
-            rating: Optional[float] = None,
+        async def search_cereals(
+            field: str,
+            value: Any,
+            operator: Literal["eq", "lt", "gt"],
         ) -> list[APICereal]:
-            """Search by attribute.
-
-            If no inputs are given all items will be returned.
+            """Search for cereals with optional filters.
 
             Args:
-                id (Optional[int], optional): Id of cereal. Defaults to None.
-                name (Optional[str], optional): Name of cereal. Defaults to None.
-                mfr (Optional[str], optional): Manifacturer. Defaults to None.
-                type (Optional[Literal["C", "H"]], optional): Is cereal eaten hot or
-                    cold. Defaults to None.
-                calories (Optional[int], optional): Calories pr serving.
-                    Defaults to None.
-                protein (Optional[int], optional): proteins pr serving.
-                    Defaults to None.
-                fat (Optional[int], optional): Fat pr serving. Defaults to None.
-                sodium (Optional[int], optional): Sodium pr serving. Defaults to None.
-                fiber (Optional[float], optional): Fiber pr serving. Defaults to None.
-                carbo (Optional[float], optional): Carbohydrates pr serving.
-                    Defaults to None.
-                sugars (Optional[int], optional): Sugars pr serving. Defaults to None.
-                potass (Optional[int], optional): Potassium pr serving.
-                    Defaults to None.
-                vitamins (Optional[int], optional): Vitamins pr serving.
-                    Defaults to None.
-                shelf (Optional[Literal[1, 2, 3]], optional): Display shelf counting
-                    from floor. Defaults to None.
-                weight (Optional[float], optional): Weight in ounces of one serving.
-                    Defaults to None.
-                cups (Optional[float], optional): Number of cups in one serving.
-                    Defaults to None.
-                rating (Optional[float], optional): Rating of the cereals.
-                    Defaults to None.
-
-            Raises:
-                HTTPException: No items found.
+                db (Session): Database
+                field (Optional[str]): Search filed.
+                value (Optional[Any]): Value.
+                operator (Optional[Literal["eq", "lt", "gt]]) Operator.
 
             Returns:
-                list[APICereal]: List of results.
+                list[Cereal]: List of found cereal.
             """
-            logging.debug("Entering search_cereals route")
             db = self.SessionLocal()
-            query = db.query(Cereal)
 
-            filters = {}
-            for parameter in [
-                "id",
-                "name",
-                "mfr",
-                "type",
-                "calories",
-                "protein",
-                "fat",
-                "sodium",
-                "fiber",
-                "carbo",
-                "sugars",
-                "potass",
-                "vitamins",
-                "shelf",
-                "weight",
-                "cups",
-                "rating",
-            ]:
-                value = locals()[parameter]
-                if value is not None:
-                    filters[parameter] = value
+            results = Cereal.get_cereals(db, field, value, operator)
 
-            cereals = query.filter_by(**filters).all()
-            db.close()
-
-            if not cereals:
-                raise HTTPException(
-                    status_code=404,
-                    detail="No cereals found with the specified criteria",
-                )
-
-            return cereals  # type: ignore
+            return results  # type:ignore
 
         @self.app.post("/cereals/")  # type:ignore
         def create_cereal(cereal: APICereal) -> APICereal:

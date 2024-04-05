@@ -19,5 +19,31 @@ DATABASE_URL = f"mysql+mysqlconnector://{USERNAME}:{PASSWORD}" "@localhost/cerea
 
 Base = declarative_base()
 
+VALID_FIELDS = [
+    "id",
+    "name",
+    "mfr",
+    "type",
+    "calories",
+    "protein",
+    "fat",
+    "sodium",
+    "fiber",
+    "carbo",
+    "sugars",
+    "potass",
+    "vitamins",
+    "shelf",
+    "weight",
+    "cups",
+    "rating",
+]
+
+OPERATOR_MAPPING = {
+    "eq": lambda field, value: field == value,
+    "gt": lambda field, value: field > value,
+    "lt": lambda field, value: field < value,
+}
+
 if __name__ == "__name__":
     pass

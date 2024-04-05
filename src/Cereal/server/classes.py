@@ -1,10 +1,12 @@
 """SQL schema."""
 
-from typing import Literal, Optional
+from typing import Any, Literal, Optional, Type
 
+from fastapi import HTTPException
 from sqlalchemy import Column, Enum, Float, Integer, String
+from sqlalchemy.orm import Session
 
-from Cereal.constants import Base
+from Cereal.constants import VALID_FIELDS, Base
 
 
 class Cereal(Base):
@@ -88,6 +90,66 @@ class Cereal(Base):
         self.weight = weight
         self.cups = cups
         self.rating = rating
+
+    @staticmethod
+    def get_cereal_by_id(db: Session, cereal_id: int) -> Type["Cereal"]:
+        """Get cereal by id.
+
+        Returns:
+            Cereal: found Cereal.
+        """
+        cereal = db.query(Cereal).filter(Cereal.id == cereal_id).first()
+        db.close()
+        if cereal is None:
+            raise HTTPException(status_code=404, detail="Cereal not found")
+        return cereal  # type:ignore
+
+    @staticmethod
+    def get_cereals(
+        db: Session,
+        field: Optional[str],
+        value: Optional[Any],
+        operator: Optional[Literal["eq", "lt", "gt"]],
+    ) -> list[Type["Cereal"]]:
+        """Search for cereal, with optional filtering.
+
+        Args:
+            db (Session): Database
+            field (Optional[str]): Search filed.
+            value (Optional[Any]): Value.
+            operator (Optional[Literal["eq", "lt", "gt]]) Operator.
+
+        Returns:
+            list[Cereal]: List of found cereal.
+        """
+        query = db.query(Cereal)
+
+        if field is None:
+            results = db.query(Cereal).all()
+        elif field not in VALID_FIELDS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid field provided: {field}.",
+            )
+        else:
+            query = db.query(Cereal)
+            if value is not None:
+                if operator == "eq":
+                    query = query.filter(getattr(Cereal, field) == value)
+                elif operator == "gt":
+                    query = query.filter(getattr(Cereal, field) > value)
+                elif operator == "lt":
+                    query = query.filter(getattr(Cereal, field) < value)
+                else:
+                    HTTPException()
+            results = query.all()
+
+        if not results:
+            raise HTTPException(
+                status_code=404,
+                detail="No cereals found with the specified criteria",
+            )
+        return results  # type:ignore
 
 
 if __name__ == "__main__":
